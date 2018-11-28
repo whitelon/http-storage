@@ -1,5 +1,6 @@
 from hashlib import md5
 from pathlib import Path
+from re import compile
 
 
 def save(file_bytes):
@@ -22,3 +23,10 @@ def get_path(hash):
 def delete(hash):
     file = get_path(hash)
     file.unlink()
+
+
+hash_symbols = compile('^[0-9a-f]+$')
+
+
+def valid_hash(hash):
+    return bool(hash_symbols.match(hash))
