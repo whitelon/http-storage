@@ -8,13 +8,15 @@ routes = web.RouteTableDef()
 @routes.post('/')
 async def upload(request):
     data = await request.post()
-    try:
-        file = data['file'].file
-        file_bytes = file.read()
-        file_hash = storage.save(file_bytes)
-        return web.json_response({'file_hash': file_hash})
-    except KeyError:
+
+    if 'file' not in data.keys():
         raise web.HTTPBadRequest(text="'file' key was not found")
+
+    file = data['file'].file
+    print(file.__dir__())
+    file_bytes = file.read()
+    file_hash = storage.save(file_bytes)
+    return web.json_response({'file_hash': file_hash})
 
 
 @routes.get('/{hash}')
