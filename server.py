@@ -17,34 +17,32 @@ async def upload(request):
         raise web.HTTPBadRequest(text="'file' key was not found")
 
 
-def find_file(action):
-
-    async def wrap(request):
-        file_hash = request.match_info['hash']
-
-        if not storage.valid_hash(file_hash):
-            raise web.HTTPBadRequest(text='invalid hash parameter')
-
-        try:
-            action(file_hash)
-        except FileNotFoundError:
-            raise web.HTTPNotFound()
-
-    return wrap
-
-
 @routes.get('/{hash}')
-@find_file
-def download(file_hash):
-    file = storage.get_path(file_hash)
-    return web.FileResponse(file)
+async def download(request):
+    file_hash = request.match_info['hash']
+
+    if not storage.valid_hash(file_hash):
+        raise web.HTTPBadRequest(text='invalid hash parameter')
+
+    try:
+        file = storage.get_path(file_hash)
+        return web.FileResponse(file)
+    except FileNotFoundError:
+        raise web.HTTPNotFound()
 
 
 @routes.delete('/{hash}')
-@find_file
-def delete(file_hash):
-    storage.delete(file_hash)
-    return web.Response(text='File deleted')
+async def delete(request):
+    file_hash = request.match_info['hash']
+
+    if not storage.valid_hash(file_hash):
+        raise web.HTTPBadRequest(text='invalid hash parameter')
+
+    try:
+        storage.delete(file_hash)
+        return web.Response(text='File deleted')
+    except FileNotFoundError:
+        raise web.HTTPNotFound()
 
 
 app = web.Application()
