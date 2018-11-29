@@ -20,6 +20,10 @@ async def upload(request):
 @routes.get('/{hash}')
 async def download(request):
     file_hash = request.match_info['hash']
+
+    if not storage.valid_hash(file_hash):
+        raise web.HTTPBadRequest(text='invalid hash parameter')
+
     try:
         file = storage.get_path(file_hash)
         return web.FileResponse(file)
@@ -30,6 +34,10 @@ async def download(request):
 @routes.delete('/{hash}')
 async def delete(request):
     file_hash = request.match_info['hash']
+
+    if not storage.valid_hash(file_hash):
+        raise web.HTTPBadRequest(text='invalid hash parameter')
+
     try:
         storage.delete(file_hash)
         return web.Response(text='File deleted')
