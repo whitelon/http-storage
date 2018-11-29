@@ -13,7 +13,6 @@ async def upload(request):
         raise web.HTTPBadRequest(text="'file' key was not found")
 
     file = data['file'].file
-    print(file.__dir__())
     file_bytes = file.read()
     file_hash = storage.save(file_bytes)
     return web.json_response({'file_hash': file_hash})
