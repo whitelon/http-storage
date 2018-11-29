@@ -1,5 +1,7 @@
 from aiohttp import web
-
+from datetime import datetime
+from pathlib import Path
+from hashlib import md5
 import storage
 
 routes = web.RouteTableDef()
@@ -7,15 +9,27 @@ routes = web.RouteTableDef()
 
 @routes.post('/')
 async def upload(request):
-    data = await request.post()
+    data = await request.multipart()
 
-    if 'file' not in data.keys():
-        raise web.HTTPBadRequest(text="'file' key was not found")
+    async for field in data:
+        if field.name == 'file':
+            tempfile = Path(f"temp{datetime.now()}")
+            md = md5()
 
-    file = data['file'].file
-    file_bytes = file.read()
-    file_hash = storage.save(file_bytes)
-    return web.json_response({'file_hash': file_hash})
+            with tempfile.open(mode='wb') as f:
+                while True:
+                    chunk = await field.read_chunk()
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    md.update(chunk)
+
+            file_hash = md.hexdigest()
+            file_hash = storage.move(tempfile, file_hash)
+
+            return web.json_response({'file_hash': file_hash})
+
+    raise web.HTTPBadRequest(text="'file' key was not found")
 
 
 @routes.get('/{hash}')

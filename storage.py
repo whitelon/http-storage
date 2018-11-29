@@ -1,14 +1,12 @@
-from hashlib import md5
 from pathlib import Path
 from re import compile
 
 
-def save(file_bytes):
-    file_hash = md5(file_bytes).hexdigest()
+def move(tempfile, file_hash):
     folder = Path(f'store/{file_hash[:2]}')
     folder.mkdir(parents=True, exist_ok=True)
     file = folder / file_hash
-    file.write_bytes(file_bytes)
+    tempfile.replace(file)
     return file_hash
 
 
