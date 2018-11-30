@@ -1,10 +1,30 @@
-from aiohttp import web
 from datetime import datetime
-from pathlib import Path
 from hashlib import md5
+from pathlib import Path
+
+from aiohttp import web
+
 import storage
 
 routes = web.RouteTableDef()
+
+
+async def save_file(reader):
+    tempfile = Path(f"temp{datetime.now()}")
+    md = md5()
+
+    with tempfile.open(mode='wb') as f:
+        while True:
+            chunk = await reader.read_chunk()
+            if not chunk:
+                break
+            f.write(chunk)
+            md.update(chunk)
+
+    file_hash = md.hexdigest()
+    file_hash = storage.move(tempfile, file_hash)
+
+    return file_hash
 
 
 @routes.post('/')
@@ -13,20 +33,7 @@ async def upload(request):
 
     async for field in data:
         if field.name == 'file':
-            tempfile = Path(f"temp{datetime.now()}")
-            md = md5()
-
-            with tempfile.open(mode='wb') as f:
-                while True:
-                    chunk = await field.read_chunk()
-                    if not chunk:
-                        break
-                    f.write(chunk)
-                    md.update(chunk)
-
-            file_hash = md.hexdigest()
-            file_hash = storage.move(tempfile, file_hash)
-
+            file_hash = await save_file(field)
             return web.json_response({'file_hash': file_hash})
 
     raise web.HTTPBadRequest(text="'file' key was not found")
